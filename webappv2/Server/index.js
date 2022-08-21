@@ -41,6 +41,10 @@ const api_router = require('./Routes/api.js')
 
 app.use('/api', api_router)
 
+const db_router = require('./Routes/dbmgmt.js')
+
+app.use('/db',db_router)
+
 app.use(express.static(path.resolve(__dirname + "/../Client/build")))
 app.use(express.static(path.resolve(__dirname + "/../Client/build/static")))
 

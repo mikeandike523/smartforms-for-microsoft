@@ -25,10 +25,10 @@ class Result {
 
     //Result Builders
     static success(data){
-        return new Result("success",undefined,data);
+        return new Result("success",undefined,data).obj()
     }
     static error(code,data){
-        return new Result("error",code,data)
+        return new Result("error",code,data).obj()
     }
 }
 

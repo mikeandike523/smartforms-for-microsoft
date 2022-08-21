@@ -38,14 +38,24 @@ function Signup(){
             return;
         }
 
-        const response = (await axios.post("http://localhost:8081/auth/signup",{
+        const response = (await axios.post("/auth/signup",{
 
             email: email,
             password: password,
             cpassword: cpassword
 
         })).data// Assume server does not crash
-        console.log(response)
+        if(response.status === "success"){
+            modalOpen({
+                title:"Success",
+                body:"Signup completed successfully."
+            })
+        }else{
+            modalOpen({
+                title:"Error",
+                body:response.data
+            })
+        }
     }
 
     return (
