@@ -6,8 +6,8 @@ function CreatePersistentStore(id){
 
         var dict_obj = {}
 
-        var load = function(target){
-            target = JSON.parse(localStorage.getItem(id))
+        var load = function(){
+            return JSON.parse(localStorage.getItem(id))
         }
 
         var save = function(target){
@@ -16,13 +16,14 @@ function CreatePersistentStore(id){
 
         var proxy_handler = {
             get: function(target, key){
-                load(target)
+                target=load()
                 return target[key]
             },
             set: function(target, key, val){
-                load(target)
+                target=load()
                 target[key] = val
                 save(target)
+                return true
             }
         }
 
@@ -66,14 +67,12 @@ function JSONDB(data,persistence={}){
         var peeled = this.data
         while(keys_copy.length > 0){
             var key = keys_copy.shift()
-            peeled = peeled[key]
-            if (peeled===undefined){
-                //throw "Key path did not match any records.";
+            if (peeled[key]===undefined&&keys_copy.length>1){
+                peeled[key]={}
             }
-            if(typeof peeled !== 'object' || keys_copy.length==0){
-                if (keys_copy.length > 0){
-                    throw "Key path contained a non-object before the last key."
-                }
+            if(keys_copy.length > 0)
+            peeled = peeled[key]
+            if(keys_copy.length==0){
                 peeled[key] = new_value_fn(peeled[key])
             }
         }

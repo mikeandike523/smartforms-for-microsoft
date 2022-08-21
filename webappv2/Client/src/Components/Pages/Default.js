@@ -9,7 +9,7 @@ function Default(){
 
     const navigate = useNavigate()
 
-    const isAuthenticated = StateManager.query.exact(["isAuthenticated"])
+    const isAuthenticated = StateManager.query.exact(["jwt"]) !== undefined
 
     useEffect(()=>{
 
