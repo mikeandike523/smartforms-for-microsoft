@@ -4,7 +4,7 @@ import CenteredContent from '../Templates/CenteredContent.js'
 
 import useModal from '../Templates/Modal'
 
-import {useNavigate} from 'react-router-dom'
+import {Link, useNavigate} from 'react-router-dom'
 import { useEffect } from 'react'
 import { useState} from 'react'
 
@@ -48,7 +48,11 @@ function Signup(){
         if(response.status === "success"){
             modalOpen({
                 title:"Success",
-                body:"Signup completed successfully."
+                body:(
+
+                    <h5>Signup successful.&nbsp;<Link to="/signin" className="w3-btn">Sign In</Link></h5>
+                    
+                )
             })
         }else{
             modalOpen({

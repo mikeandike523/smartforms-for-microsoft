@@ -7,11 +7,16 @@ class DBManager{
     login(password){
         this.password = password;
     }
-    async listUsers(){
-        console.log((await axios.post("/db/list-users",{"db_admin_password":this.password})).data)
+    async query(route){
+        console.log((await axios.post("/db/"+route,{"db_admin_password":this.password})).data)
     }
-    async clearUsers(){
-        console.log((await axios.post("/db/clear-all-users",{"db_admin_password":this.password})).data)
+    help(){
+        const possible_commands = [
+            "list-users",
+            "clear-all-users",
+            "list-user-data"
+        ]
+        console.log("Possible commands:\n"+possible_commands.join("\n"))
     }
 }
 

@@ -86,18 +86,22 @@ async function redirectToAuthCodeUrl(req, res, next, authCodeUrlRequestParams, a
 
     // Get url to sign user in and consent to scopes needed for application
     try {
-        //const authCodeUrlResponse = await msalInstance.getAuthCodeUrl(req.session.authCodeUrlRequest);
-       // res.send(authCodeUrlResponse)
-       res.send(equivalentURLFormatted)
+        const authCodeUrlResponse = await msalInstance.getAuthCodeUrl(req.session.authCodeUrlRequest);
+        res.send(authCodeUrlResponse)
+       //res.send(equivalentURLFormatted)
     } catch (error) {
         next(error);
     }
 };
 
-router.get('/signin', async function (req, res, next) {
+router.post('/signin', async function (req, res, next) {
+
+    const jwt = req.body.jwt
 
     // create a GUID for crsf
     req.session.csrfToken = cryptoProvider.createNewGuid();
+
+    req.session.jwt = jwt
 
     /**
      * The MSAL Node library allows you to pass your custom state as state parameter in the Request object.
@@ -107,7 +111,7 @@ router.get('/signin', async function (req, res, next) {
     const state = cryptoProvider.base64Encode(
         JSON.stringify({
             csrfToken: req.session.csrfToken,
-            redirectTo: '/'
+            redirectTo: '/dev-redirect'
         })
     );
 
@@ -146,15 +150,50 @@ router.post('/redirect', bodyParser.urlencoded({extended: false}), async functio
 
             try {
                 const tokenResponse = await msalInstance.acquireTokenByCode(req.session.authCodeRequest);
-                console.log(tokenResponse)
+                req.session.tokenResponse = tokenResponse // for debug only
                 req.session.accessToken = tokenResponse.accessToken;
                 req.session.idToken = tokenResponse.idToken;
                 req.session.account = tokenResponse.account;
                 req.session.isAuthenticated = true;
+                console.log(req.session.jwt)
 
-                fs.writeFileSync("tokenResponse.json",JSON.stringify(tokenResponse))
+                const extractRefreshToken = () => {
+                    const tokenCache = msalInstance.getTokenCache()
+                    console.log(tokenCache)
+                    console.log(tokenCache.storage.cache)
+                    var refreshToken = null;
+                    for(const item in tokenCache.storage.cache){
+                        if (item.credentialType === 'RefreshToken'){
+                            refreshToken = item.secret
+                            break
+                        }
+                    }
+                    return refreshToken
+                }
 
-                res.redirect(state.redirectTo);
+                req.session.refreshToken = extractRefreshToken()
+
+                console.log(req.session) // for debug only
+
+                tokenInfo = {}
+
+                tokenInfo["microsoftId"] = req.session.account.homeAccountId
+
+                tokenInfo["userFullName"] = req.session.account.name
+
+                tokenInfo["microsoftEmail"] = req.session.account.username
+
+                tokenInfo["accessToken"] = req.session.accessToken
+
+                tokenInfo["refreshToken"] = req.session.refreshToken
+
+                tokenInfo["organizationName"] = "not yet implemented"
+
+                req.session["tokenInfo"] = tokenInfo
+
+                console.log("Set token info.")
+
+                res.redirect("http://localhost:8081/dev-redirect")
             } catch (error) {
                 next(error);
             }
@@ -169,7 +208,7 @@ router.post('/redirect', bodyParser.urlencoded({extended: false}), async functio
     }
 });
 
-router.get('/signout', function (req, res) {
+router.post('/signout', function (req, res) {
     /**
      * Construct a logout URI and redirect the user to end the
      * session with Azure AD. For more information, visit:

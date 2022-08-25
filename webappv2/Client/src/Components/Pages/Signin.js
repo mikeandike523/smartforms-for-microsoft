@@ -4,11 +4,13 @@ import CenteredContent from '../Templates/CenteredContent.js'
 
 import useModal from '../Templates/Modal.js'
 
-import {useNavigate, Link} from 'react-router-dom'
+import {useNavigate, Link, Navigate} from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
 function Signin(){
+
+    const navigate = useNavigate()
 
     const [modal_content, modalOpen, modalClose] = useModal()
 
@@ -34,12 +36,11 @@ function Signin(){
         )).data
 
         if(response.status==="success"){
-            modalOpen({
-                title:"Success",
-                body:"Login successful."
-            })
+
             StateManager.upsert.exact(["jwt"],response.data)
-            console.log(StateManager.query.exact(["jwt"]))
+
+            navigate("/default",{replace:true})
+
         }else{
             modalOpen({
                 title:"Error",

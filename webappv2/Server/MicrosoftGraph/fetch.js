@@ -30,4 +30,23 @@ async function fetchV10(API_PATH, accessToken) {
     }
 }
 
-module.exports = fetchV10;
+async function postV10(API_PATH, accessToken, data) {
+
+    const endpoint = process.env.GRAPH_API_ENDPOINT + "/v1.0/" + API_PATH
+
+    const options = {
+        headers: {
+            Authorization: `Bearer ${accessToken}`
+        }
+    };
+
+    console.log(`request made to ${endpoint} at: ` + new Date().toString());
+
+    try {
+        return (await axios.post(endpoint,data, options)).data;
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+module.exports = {graph_get:fetchV10,graph_post:postV10}

@@ -9,8 +9,7 @@ const Result = require('../Utils/Result.js')
 const ConfigLoader = require('../Utils/ConfigLoader.js')
 
 const User = require('../Models/User.js')
-
-
+const UserData = require('../Models/UserData.js')
 
 const router = express.Router()
 
@@ -32,7 +31,7 @@ router.use(MW_checkAdminPassword)
 router.post("/list-users",async function(req,res){
     try{
         const users = await User.find().exec()
-        res.json(users)
+        res.json(Result.success(users))
     }catch(err){
         res.json(Result.error("mongoose_error","Could not list users: "+err.message))
     }
@@ -45,6 +44,37 @@ router.post('/clear-all-users',async function(req,res){
     }catch(e){ 
         res.json(Result.error("mongoose_error","Could not clear all users: "+e.message))
     }
+})
+
+router.post('/list-user-data', async function(req,res){
+
+    try{
+        
+        const userDataResults = []
+
+        const users = await User.find().exec()
+
+        for(let i = 0; i < users.length; i++){
+
+            const user = users[i]
+
+            var resultObj = {}
+
+            const userData = await UserData.findOne({id:user.id}).exec()
+
+            resultObj["user"] = user;
+            resultObj["userData"] = userData;
+
+            userDataResults.push(resultObj)
+            
+        }
+
+        res.json(Result.success(userDataResults))
+
+    }catch(e){
+        res.json(Result.error("mongoose error","Could not list user data: "+e.message))
+    }
+
 })
 
 

@@ -1,8 +1,21 @@
 import 'w3-css/w3.css'
 
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+
+import useModal from '../Templates/Modal.js'
+
+import StateManager from '../../AppUtils/StateManager.js'
 
 function PageWithCenteredContent(props){
+
+    const navigate = useNavigate()
+
+    const [modal_content, modalOpen, modalClose] = useModal()
+
+    const handleSignout = () =>{
+        StateManager.upsert.exact(["jwt"],null)
+        navigate('/default',{replace:true})
+    }
 
     return (
 
@@ -29,13 +42,12 @@ function PageWithCenteredContent(props){
                 {
                 props.isAuthenticated?(
                     <>
-
                     <Link to="/dashboard">
                     <button type="button" className="w3-bar-item w3-button w3-yellow">Dashboard</button>
                     </Link>
-                    <Link to="/signout">
-                    <button type="button" className="w3-bar-item w3-button w3-yellow">Sign Out</button>
-                    </Link>
+
+                    <button type="button" className="w3-bar-item w3-button w3-yellow" onClick={handleSignout}>Sign Out</button>
+
                     </>
                 ) :
                 (
@@ -50,6 +62,8 @@ function PageWithCenteredContent(props){
                 )
                 }
         </div>
+
+        {modal_content}
 
     </>
     );

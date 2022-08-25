@@ -12,7 +12,16 @@ const mongoose = require('mongoose')
 
 var app = express()
 
-app.use(cors({origin:"*"}))
+// app.use(cors({
+//     origin:"http://localhost:3000",
+//     credentials: true,
+//     preflightContinue: true
+// }))
+
+app.use(cors({
+    origin:true,
+    credentials: true,
+}))
 
 app.use(express.json())
 
@@ -28,10 +37,8 @@ app.use(session({
 }))
 
 var auth0_router = require('./MicrosoftGraph/auth.js')
-const { appendFile } = require('fs')
 
-// app.use('/auth', auth0_router)
-
+app.use('/auth0', auth0_router)
 
 const auth_router = require('./Routes/auth.js')
 
@@ -50,6 +57,10 @@ app.use(express.static(path.resolve(__dirname + "/../Client/build/static")))
 
 app.get('/',(req,res)=>{
     res.sendFile(path.resolve(__dirname+"/../Client/build/index.html"))
+})
+
+app.get('/dev-redirect',(req,res)=>{
+    res.redirect('http://localhost:3000')
 })
 
 async function connect(){
