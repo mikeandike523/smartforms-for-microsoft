@@ -2,7 +2,20 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path":"./webappv2/Client"
+		},
+		{
+			"path":"./webappv2/Server"
 		}
 	],
-	"settings": {}
+	"settings": {
+
+		"terminal.integrated.defaultProfile.windows": "Command Prompt",
+		"terminal.integrated.cwd": "./webappv2",
+		"editor.wordWrap": "on",
+		"search.exclude":{"**/node_modules":true}
+
+	}
 }

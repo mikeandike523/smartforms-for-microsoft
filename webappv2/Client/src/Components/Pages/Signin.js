@@ -50,9 +50,8 @@ function Signin(){
     
     }
 
-
-
     return (
+
         <>
         <CenteredContent isAuthenticated={false}>
             <h1>SmartSummaries For Excel Online</h1>
@@ -63,12 +62,12 @@ function Signin(){
             </div>
             <button type="button" className="w3-btn w3-green" onClick={handleSignIn}>Sign In</button>
             <h5>No Account?&nbsp;<Link to="/signup" className='w3-text-blue'>Sign Up</Link></h5>
-            
         </CenteredContent>
         {modal_content}
         </>
             
     );
+    
 }
 
 export default Signin;

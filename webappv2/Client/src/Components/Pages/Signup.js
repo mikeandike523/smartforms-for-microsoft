@@ -1,21 +1,15 @@
 import StateManager from '../../AppUtils/StateManager.js'
-
 import CenteredContent from '../Templates/CenteredContent.js'
-
 import useModal from '../Templates/Modal'
-
 import {Link, useNavigate} from 'react-router-dom'
 import { useEffect } from 'react'
 import { useState} from 'react'
-
 import axios from 'axios'
 
 function Signup(){
 
     const [email, setEmail] = useState("")
-
     const [password, setPassword] = useState("")
-
     const [cpassword, setCPassword] = useState("")
 
     const [modal_content, modalOpen, modalClose] = useModal()
@@ -45,12 +39,13 @@ function Signup(){
             cpassword: cpassword
 
         })).data// Assume server does not crash
+
         if(response.status === "success"){
             modalOpen({
                 title:"Success",
                 body:(
 
-                    <h5>Signup successful.&nbsp;<Link to="/signin" className="w3-btn">Sign In</Link></h5>
+                    <h5>Signup successful.&nbsp;<Link to="/signin" style={{textDecoration:"underline",cursor:"pointer",userSelect:"none"}}>Sign In</Link></h5>
                     
                 )
             })

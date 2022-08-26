@@ -1,26 +1,16 @@
 const express = require('express')
-
 const mongoose = require('mongoose')
-
 const safeCompare = require("safe-compare")
-
 const Result = require('../Utils/Result.js')
-
 const ConfigLoader = require('../Utils/ConfigLoader.js')
-
 const User = require('../Models/User.js')
 const UserData = require('../Models/UserData.js')
-
 const router = express.Router()
-
 
 MW_checkAdminPassword = function(req, res, next) {
     const db_admin_password = req.body.db_admin_password
-    console.log(db_admin_password)
-    console.log(req.body)
     if(!safeCompare((db_admin_password??"").trim(),ConfigLoader(['dbmgmt','db_admin_password']))){
         res.json(Result.error("db_admin_password_incorrect","The DB admin password is incorrect."))
-        //return next("router")
     }else{
         next()
     }
@@ -60,10 +50,21 @@ router.post('/list-user-data', async function(req,res){
 
             var resultObj = {}
 
-            const userData = await UserData.findOne({id:user.id}).exec()
+            const userData = await UserData.findOne({user:user.id}).populate('connectedAccounts').exec()
 
             resultObj["user"] = user;
             resultObj["userData"] = userData;
+
+            var connectedAccounts = userData["connectedAccounts"]
+
+            var array = []
+
+            for(var j=0; j<connectedAccounts.length; j++){
+                connectedAccount = connectedAccounts[j]
+                array.push(connectedAccount)
+            }
+
+            resultObj["connectedAccounts"] = array;
 
             userDataResults.push(resultObj)
             
@@ -76,8 +77,5 @@ router.post('/list-user-data', async function(req,res){
     }
 
 })
-
-
-
 
 module.exports = router;
