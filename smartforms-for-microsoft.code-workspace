@@ -15,7 +15,7 @@
 		"terminal.integrated.defaultProfile.windows": "Command Prompt",
 		"terminal.integrated.cwd": "./webappv2",
 		"editor.wordWrap": "on",
-		"search.exclude":{"**/node_modules":true}
+		"search.exclude":{"**/node_modules":true,"**/package.json":true,"**/package-lock.json":true}
 
 	}
 }

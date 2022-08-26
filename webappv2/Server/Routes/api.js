@@ -85,7 +85,20 @@ router.post('/connected-accounts',async (req,res)=>{
             const connectedAccount = connectedAccounts[i]
             connectedAccounts[i]["health"] = await checkConnectionHealth(connectedAccount.microsoftId, connectedAccount.accessToken, connectedAccount.refreshToken)
         }
-        res.json(Result.success(connectedAccounts))
+        var connectedAccountResults = []
+        for(var i =0; i<connectedAccounts.length;i++){
+            const connectedAccount = connectedAccounts[i]
+            const resultObject = {}
+            
+            //Respond only with necessary fields for the ui
+            resultObject["userFullName"] = connectedAccount.userFullName
+            resultObject["microsoftEmail"] = connectedAccount.microsoftEmail
+            resultObject["organizationName"] = connectedAccount.organizationName
+            resultObject["health"] = connectedAccount.health
+
+            connectedAccountResults.push(resultObject)
+        }
+        res.json(Result.success(connectedAccountResults))
     }
     catch(e){
         res.json(Result.error("generic_error","Error getting connected accounts: "+e.message))

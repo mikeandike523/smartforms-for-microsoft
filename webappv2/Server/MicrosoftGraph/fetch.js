@@ -1,5 +1,7 @@
 // Adapted from https://docs.microsoft.com/en-us/azure/active-directory/develop/tutorial-v2-nodejs-webapp-msal
 
+const path = require('path')
+
 var axios = require('axios').default;
 
 async function graph_get (API_PATH, accessToken) {

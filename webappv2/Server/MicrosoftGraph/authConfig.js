@@ -1,6 +1,6 @@
 // Adapted from https://docs.microsoft.com/en-us/azure/active-directory/develop/tutorial-v2-nodejs-webapp-msal
 
-require('dotenv').config();
+const path = require('path')
 
 const msalConfig = {
     auth: {

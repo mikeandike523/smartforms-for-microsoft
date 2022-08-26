@@ -1,10 +1,12 @@
-require('dotenv').config()
-
 var express = require('express')
 var session = require('express-session')
 var cors = require('cors')
 var path = require('path')
 const mongoose = require('mongoose')
+
+require('dotenv').config({path:path.resolve(__dirname+"/.env")})
+
+console.log(process.env)
 
 var app = express()
 

@@ -6,6 +6,7 @@ const bodyParser = require("body-parser")
 const ConfigLoader = require("../Utils/ConfigLoader.js")
 const { exit } = require('yargs');
 const { default: axios } = require('axios');
+const path = require('path')
 
 var {
     msalConfig,
