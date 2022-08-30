@@ -5,6 +5,7 @@ const Result = require('../Utils/Result.js')
 const ConfigLoader = require('../Utils/ConfigLoader.js')
 const User = require('../Models/User.js')
 const UserData = require('../Models/UserData.js')
+const ConnectedAccount = require('../Models/ConnectedAccount.js')
 const router = express.Router()
 
 MW_checkAdminPassword = function(req, res, next) {
@@ -30,6 +31,9 @@ router.post("/list-users",async function(req,res){
 router.post('/clear-all-users',async function(req,res){
     try{
         await User.deleteMany({})
+        await UserData.deleteMany({})
+        await ConnectedAccount.deleteMany({})
+        
         res.json(Result.success("\"Users\" db successfully cleared."))
     }catch(e){ 
         res.json(Result.error("mongoose_error","Could not clear all users: "+e.message))

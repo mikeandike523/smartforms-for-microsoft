@@ -13,9 +13,14 @@
 	"settings": {
 
 		"terminal.integrated.defaultProfile.windows": "Command Prompt",
-		"terminal.integrated.cwd": "./webappv2",
+		"terminal.integrated.cwd": "${workspaceFolder}",
 		"editor.wordWrap": "on",
-		"search.exclude":{"**/node_modules":true,"**/package.json":true,"**/package-lock.json":true}
+		"search.exclude": {
+			"**/node_modules": true,
+			"**/package.json": true,
+			"**/package-lock.json": true
+		},
+		"powershell.cwd": "c:\\Projects\\smartforms-for-microsoft"
 
 	}
 }

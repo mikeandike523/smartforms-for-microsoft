@@ -6,14 +6,12 @@ const UserData = mongoose.Schema({
         type: Schema.Types.ObjectId,
         ref: 'Users',
     },
-    "connectedAccounts":[{
-        "microsoftId":String,
-        "microsoftEmail":String,
-        "accessToken":String,
-        "refreshToken":String,
-        "userFullName":String,
-        "organizationName":String
-    }]
+    "connectedAccounts":[
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'ConnectedAccounts'
+        }
+    ]
 })
 
 module.exports = mongoose.model('UserData',UserData)

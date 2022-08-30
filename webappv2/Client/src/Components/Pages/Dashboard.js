@@ -8,11 +8,23 @@ import axios from 'axios'
 
 function Dashboard(){
 
+    const handleDisconnectAccount = async (e) => {
+
+        const connectionId = e.target.props.connectionid
+
+        console.log(connectionId)
+
+        const result = (await axios.post("http://localhost:8081/api/disconnect-account",{jwt:StateManager.query.exact(["jwt"]),connectionId:connectionId})).data
+
+        console.log(result)
+
+    }
+
     const handleConnectAccount = async () => {
 
         const login_url = (await axios.post('http://localhost:8081/auth0/signin',{jwt:StateManager.query.exact(["jwt"])},{withCredentials:true})).data
         window.location = login_url
-
+        
     }
 
     const [connectedAccounts, setConnectedAccounts] = useState([])
@@ -24,6 +36,10 @@ function Dashboard(){
             const result = (await axios.post('http://localhost:8081/api/associate-latest-token',{jwt:StateManager.query.exact(["jwt"])},{withCredentials:true})).data // Idempotent operation
 
             var connectedAccountsResult = (await axios.post('http://localhost:8081/api/connected-accounts',{jwt:StateManager.query.exact(["jwt"])},{withCredentials:true})).data
+
+
+                
+
             if(connectedAccountsResult.status==="success"){
                 setConnectedAccounts(connectedAccountsResult.data)
             }else{
@@ -74,10 +90,10 @@ function Dashboard(){
                         {
                             (()=>{
                                 var entry_idx = -1
-                                function entry (userFullName,userMicrosoftEmail,tennantFullName,connectionHealth){
+                                function entry (userFullName,userMicrosoftEmail,tennantFullName,connectionHealth,id){
                                     entry_idx++
                                     return (<tr key={`account_${entry_idx}`}><td>{userFullName}</td><td>{userMicrosoftEmail}</td><td>{tennantFullName}</td><td>{connectionHealth
-                                    !=="dead" ? connectionHealth : (<span>dead&nbsp;<span style={{textDecoration:"underline",cursor:"pointer",userSelect:"none"}} className="w3-text-red">(disconnect)</span></span>)
+                                    !=="dead" ? connectionHealth : (<span>dead&nbsp;<span onClick={handleDisconnectAccount} connectionid={id}  style={{textDecoration:"underline",cursor:"pointer",userSelect:"none"}} className="w3-text-red">(disconnect)</span></span>)
                                     }</td></tr>)
                                 }
                                 var entries = []
