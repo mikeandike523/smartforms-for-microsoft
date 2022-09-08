@@ -14,6 +14,7 @@ const JSONDB = require('../Utils/JSONDB.js');
 const msalConfig = require('../MicrosoftGraph/authConfig.js').msalConfig
 const axios = require('axios')
 const qs= require('querystring')
+const {getPathComponents} = require('../Utils/PathManagement.js')
 
 const msalInstance = new msal.ConfidentialClientApplication(msalConfig)
 const router = express.Router();
@@ -86,7 +87,12 @@ async function checkConnectionHealth(microsoftId,accessToken,refreshToken){
         }
         return "alive"       
     }catch(e){
-        throw e // Is this necessary?
+
+        console.log("Error occured while checking connection health: "+e.message+"\n"+e.stack)
+
+        return "dead" // In the future need to handle errors instead of assume dead
+
+        // throw e // Throwing the error broke the route
     }
 }
 
@@ -357,6 +363,8 @@ router.post('/file-picker/list', async function(req,res){
         
         const root = req.body.path
 
+        var components = getPathComponents(root)
+
         const userId = req.userId
 
         const connectedAccountId = req.body.connectedAccountId
@@ -365,18 +373,27 @@ router.post('/file-picker/list', async function(req,res){
 
         if(acct){
 
-            const response = (await graphGetWithHealthCheck(connectedAccountId, '/me/drive/root/children'))
+            var response = null;
+
+            if(components.length == 0){
+                response = (await graphGetWithHealthCheck(connectedAccountId, '/me/drive/root/children'))
+            }
+            else{
+                response = (await graphGetWithHealthCheck(connectedAccountId, `/me/drive/root/:${components.join("/")}/children`))
+            }
+
+            console.log(response.data)
 
             var responseData = []
 
-            for(var i=0; i< response.data.length; i++){
+            for(var i=0; i< response.data.value.length; i++){
 
-                var child = response.data[i]
+                var child = response.data.value[i]
 
                 var responseObj = {}
 
                 responseObj.name = child.name
-                responseObj.folder = child.folder
+                responseObj.isFolder = !!child.folder
 
                 responseData.push(responseObj)
                 

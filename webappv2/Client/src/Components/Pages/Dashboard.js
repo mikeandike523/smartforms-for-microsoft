@@ -129,11 +129,15 @@ function Dashboard(){
                                     entry_idx++
                                     return (<><tr key={`account_${entry_idx}`}><td>{userFullName}</td><td>{userMicrosoftEmail}</td><td>{tennantFullName}</td><td>{(<span>{connectionHealth}&nbsp;<span onClick={handleDisconnectAccount} connectionid={id}  style={{textDecoration:"underline",cursor:"pointer",userSelect:"none"}} className="w3-text-red">(disconnect)</span></span>)
                                     }</td></tr>
+                                    
+                                    {(connectionHealth==="alive")&&(
                                     <tr>
-                                        <td colspan='4'>
+                                        <td colSpan='4'>
                                     <SpreadsheetList items={spreadsheetLists[id]??[]} handleConnectSpreadsheet={(e)=>handleConnectSpreadsheet(id)}/>
                                         </td>
-                                    </tr></>)
+                                    </tr>)}
+                                    
+                                    </>)
                                 }
                                 var entries = []
                                 for(var i=0; i<connectedAccounts.length; i++){
@@ -145,7 +149,7 @@ function Dashboard(){
                         }
                     </tbody>
                 </table>
-                <div class='w3-text-center'>
+                <div className='w3-text-center'>
                     <span className="w3-btn" style={{textDecoration:"underline"}} onClick={handleConnectAccount}>Connect Another Account</span>
                 </div>
             </>

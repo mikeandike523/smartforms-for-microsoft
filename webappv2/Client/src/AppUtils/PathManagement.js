@@ -13,6 +13,4 @@ function getPathComponents(path) {
 
 }
 
-module.exports = {
-    getPathComponents: getPathComponents
-}
+export {getPathComponents}
