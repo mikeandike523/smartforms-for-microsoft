@@ -1,17 +1,17 @@
 function CreatePersistentStore(id){
 
-        if(localStorage.getItem(id)===null){
-            localStorage.setItem(id, JSON.stringify({}));
+        if(sessionStorage.getItem(id)===null){
+            sessionStorage.setItem(id, JSON.stringify({}));
         }
 
         var dict_obj = {}
 
         var load = function(){
-            return JSON.parse(localStorage.getItem(id))
+            return JSON.parse(sessionStorage.getItem(id))
         }
 
         var save = function(target){
-            localStorage.setItem(id, JSON.stringify(target));
+            sessionStorage.setItem(id, JSON.stringify(target));
         }
 
         var proxy_handler = {

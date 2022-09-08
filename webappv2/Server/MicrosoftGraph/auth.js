@@ -82,6 +82,7 @@ router.post('/signin', async function (req, res, next) {
     const authCodeUrlRequestParams = {
         state: state,
         scopes: ConfigLoader(["auth","scopes"]),
+        prompt:"login"
     };
 
     const authCodeRequestParams = {
@@ -111,8 +112,25 @@ router.post('/redirect', bodyParser.urlencoded({extended: false}), async functio
 
                 const extractRefreshToken = () => {
                     const tokenCache = msalInstance.getTokenCache()
+                    // console.log(JSON.stringify(tokenCache.storage.cache,null,4))
+
                     var refreshToken = null;
-                    for(const item in tokenCache.storage.cache){
+                    // for(const item in tokenCache.storage.cache){
+                    //     if (item.credentialType === 'RefreshToken'){
+                    //         refreshToken = item.secret
+                    //         break
+                    //     }
+                    // }
+                    // for (var i = 0; i < tokenCache.storage.cache.length; i++) {
+                    //     const item = tokenCache.storage.cache[i]
+                    //     console.log(item)
+                    //     if (item.credentialType === 'RefreshToken'){
+                    //         refreshToken = item.secret
+                    //         // break
+                    //     }
+                    // }
+                    for(const [key,value] of Object.entries(tokenCache.storage.cache)){
+                        const item = value
                         if (item.credentialType === 'RefreshToken'){
                             refreshToken = item.secret
                             break
@@ -121,7 +139,19 @@ router.post('/redirect', bodyParser.urlencoded({extended: false}), async functio
                     return refreshToken
                 }
 
+                const tokenCache = msalInstance.getTokenCache()
+
+                // console.log(tokenCache)
+
+                // console.log(tokenCache.storage)
+
+                // console.log(tokenCache.storage.cache)
+
                 req.session.refreshToken = extractRefreshToken()
+
+                console.log(`extractRefreshToken: ${extractRefreshToken()}`)
+
+                console.log(`req.session.refreshToken: ${req.session.refreshToken}`)
 
                 tokenInfo = {}
 

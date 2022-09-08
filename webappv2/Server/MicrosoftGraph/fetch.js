@@ -17,7 +17,7 @@ async function graph_get (API_PATH, accessToken) {
     console.log(`get request made to ${endpoint} at: ` + new Date().toString());
 
     try {
-        return (await axios.get(endpoint, options)).data;
+        return (await axios.get(endpoint, options))
     } catch (error) {
         throw new Error(error);
     }
@@ -36,7 +36,7 @@ async function graph_post(API_PATH, accessToken, data) {
     console.log(`post request made to ${endpoint} at: ` + new Date().toString());
 
     try {
-        return (await axios.post(endpoint,data, options)).data;
+        return (await axios.post(endpoint,data, options))
     } catch (error) {
         throw new Error(error);
     }

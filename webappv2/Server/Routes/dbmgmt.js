@@ -54,21 +54,21 @@ router.post('/list-user-data', async function(req,res){
 
             var resultObj = {}
 
-            const userData = await UserData.findOne({user:user.id}).populate('connectedAccounts').exec()
+            // const userData = await UserData.findOne({user:user.id}).populate('connectedAccounts').exec()
 
             resultObj["user"] = user;
-            resultObj["userData"] = userData;
+            // resultObj["userData"] = userData;
 
-            var connectedAccounts = userData["connectedAccounts"]
+            // var connectedAccounts = userData["connectedAccounts"]
 
-            var array = []
+            // var array = []
 
-            for(var j=0; j<connectedAccounts.length; j++){
-                connectedAccount = connectedAccounts[j]
-                array.push(connectedAccount)
-            }
+            // for(var j=0; j<connectedAccounts.length; j++){
+            //     connectedAccount = connectedAccounts[j]
+            //     array.push(connectedAccount)
+            // }
 
-            resultObj["connectedAccounts"] = array;
+            // resultObj["connectedAccounts"] = array;
 
             userDataResults.push(resultObj)
             
@@ -80,6 +80,17 @@ router.post('/list-user-data', async function(req,res){
         res.json(Result.error("mongoose error","Could not list user data: "+e.message))
     }
 
+})
+
+router.post('/list-connected-accounts',async (req,res)=>{
+
+    try{
+        const connectedAccounts = await ConnectedAccount.find({}).exec()
+        res.json(Result.success(connectedAccounts))
+    }
+    catch(e){
+        res.json(Result.error("generic_error","Could not list connected accounts: "+e.message))
+    }
 })
 
 module.exports = router;

@@ -30,17 +30,19 @@ async function RT_createUser(req,res,next){
         if(err){
             res.json(Result.error("mongoose_error","Error creating user: "+err.message))
         }else{
-            UserData({
-                "user":user.id
-            }).save((err, userData)=>{
+            // UserData({
+            //     "user":user.id
+            // }).save((err, userData)=>{
 
-                if(err){
-                    res.json(Result.error("mongoose_error","Error saving UserData object: "+err.message))
-                }else{
-                    res.json(Result.success("User created successfully."))
-                }
+            //     if(err){
+            //         res.json(Result.error("mongoose_error","Error saving UserData object: "+err.message))
+            //     }else{
+            //         res.json(Result.success("User created successfully."))
+            //     }
 
-            })
+            // })
+
+            res.json(Result.success("User created successfully."))
             
         }
     })
