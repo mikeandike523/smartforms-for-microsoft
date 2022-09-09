@@ -145,8 +145,10 @@ router.post('/associate-latest-token',async (req,res) => {
 
 
     if((!req.session)||(!req.session.tokenInfo)){
+        console.log("No pending tokens to associate.")
         res.status(200).json(Result.success("No pending tokens to associate."))
     }else{
+        console.log("Associating token...")
         // const tokenInfo = req.session.tokenInfo
         // const userId = req.userId;
         // const userData = await UserData.findOne({user:userId})
@@ -211,11 +213,7 @@ router.post('/associate-latest-token',async (req,res) => {
 
         const connectedAccount = await ConnectedAccount.findOneAndUpdate({microsoftId:microsoftId},tokenInfo,{upsert:true})
 
-
-
-        if(req.session&&req.session.destroy){
-
-        }
+        console.log(connectedAccount)
 
         await new Promise((resolve)=>{
 

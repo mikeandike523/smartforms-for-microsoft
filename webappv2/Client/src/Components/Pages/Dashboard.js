@@ -19,7 +19,7 @@ function Dashboard(){
 
     const handleDisconnectAccount = async (e) => {
 
-        const connectionId = e.target.connectionid
+        const connectionId = e.target.dataset.connectionid
 
         // @TODO: Is it safe to expose microsoft homeAccountId on the client/browser side?
         const loginInfo = (await axios.post("http://localhost:8081/api/disconnect-account",{jwt:StateManager.query.exact(["jwt"]),connectionId:connectionId})).data
@@ -33,6 +33,15 @@ function Dashboard(){
         await helper.finalize()
 
         window.location.reload()
+
+    }
+
+    const handleReconnectAccount = async(e) => {
+
+        const connectionId = e.target.dataset.connectionid
+        console.log("connectionId: " + connectionId)
+        const login_url = (await axios.post('http://localhost:8081/auth0/signin',{jwt:StateManager.query.exact(["jwt"]),connectedAccountId:connectionId},{withCredentials:true})).data
+         window.location = login_url
 
     }
 
@@ -55,6 +64,8 @@ function Dashboard(){
     useEffect(()=>{
 
         (async () => {
+
+            window.axios = axios
 
             // const helper = new MSALLogoutHelper({})
             // await helper.finalize()
@@ -126,8 +137,9 @@ function Dashboard(){
                             (()=>{
                                 var entry_idx = -1
                                 function entry (userFullName,userMicrosoftEmail,tennantFullName,connectionHealth,id){
+                                    console.log("entry id:" + id)
                                     entry_idx++
-                                    return (<><tr key={`account_${entry_idx}`}><td>{userFullName}</td><td>{userMicrosoftEmail}</td><td>{tennantFullName}</td><td>{(<span>{connectionHealth}&nbsp;<span onClick={handleDisconnectAccount} connectionid={id}  style={{textDecoration:"underline",cursor:"pointer",userSelect:"none"}} className="w3-text-red">(disconnect)</span></span>)
+                                    return (<><tr key={`account_${entry_idx}`}><td>{userFullName}</td><td>{userMicrosoftEmail}</td><td>{tennantFullName}</td><td>{(<span>{connectionHealth}&nbsp;<span onClick={handleDisconnectAccount} data-connectionid={id}  style={{textDecoration:"underline",cursor:"pointer",userSelect:"none"}} className="w3-text-red">(disconnect)</span>&nbsp;<span onClick={handleReconnectAccount} data-connectionid={id}  style={{textDecoration:"underline",cursor:"pointer",userSelect:"none"}} className="w3-text-blue">(reconnect)</span></span>)
                                     }</td></tr>
                                     
                                     {(connectionHealth==="alive")&&(
@@ -142,7 +154,8 @@ function Dashboard(){
                                 var entries = []
                                 for(var i=0; i<connectedAccounts.length; i++){
                                     var account = connectedAccounts[i]
-                                    entries.push(entry(account.userFullName,account.microsoftEmail,account.organizationName,account.health))
+                                    console.log(account)
+                                    entries.push(entry(account.userFullName,account.microsoftEmail,account.organizationName,account.health,account.id))
                                 }
                                 return entries
                             })()

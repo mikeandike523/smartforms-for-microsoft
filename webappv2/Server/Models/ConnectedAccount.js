@@ -9,6 +9,7 @@ const ConnectedAccount = mongoose.Schema({
         "type":String,
         "unique":true
     },
+    "microsoftLoginHint":String,
     "microsoftEmail":String,
     "accessToken":String,
     "refreshToken":String,

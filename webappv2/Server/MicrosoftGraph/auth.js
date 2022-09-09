@@ -7,12 +7,13 @@ const ConfigLoader = require("../Utils/ConfigLoader.js")
 const { exit } = require('yargs');
 const { default: axios } = require('axios');
 const path = require('path')
-
+const fs = require('fs')
 var {
     msalConfig,
     REDIRECT_URI,
     POST_LOGOUT_REDIRECT_URI
 } = require('./authConfig');
+const ConnectedAccount = require('../Models/ConnectedAccount.js');
 
 const router = express.Router();
 const msalInstance = new msal.ConfidentialClientApplication(msalConfig);
@@ -42,23 +43,15 @@ async function redirectToAuthCodeUrl(req, res, next, authCodeUrlRequestParams, a
         ...authCodeRequestParams,
     };
 
-    const equivalentURL = `https://login.microsoftonline.com/${process.env.TENANT_ID}/oauth2/v2.0/authorize?
-    client_id=${process.env.CLIENT_ID}&
-    response_type=code&
-    redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI)}&
-    response_mode=form_post&
-    scope=${encodeURIComponent(["user.read","files.readwrite","offline_access"].join(" "))}&
-    state=${encodeURIComponent(JSON.stringify(authCodeUrlRequestParams.state))}&
-    code_challenge=${encodeURIComponent(req.session.pkceCodes.challenge)}&
-    code_challenge_method=S256
-    `
-
-    var equivalentURLFormatted = equivalentURL.replace(/\n+/g,"").replace(/ +/g,"")
-
     try {
-        const authCodeUrlResponse = await msalInstance.getAuthCodeUrl(req.session.authCodeUrlRequest);
+        var authCodeUrlResponse = await msalInstance.getAuthCodeUrl(req.session.authCodeUrlRequest);
+
+        if(authCodeUrlRequestParams.login_hint){
+            authCodeUrlResponse += "&login_hint=" + encodeURIComponent(authCodeUrlRequestParams.login_hint)
+        }
+
         res.send(authCodeUrlResponse)
-       //res.send(equivalentURLFormatted)
+
     } catch (error) {
         next(error);
     }
@@ -72,22 +65,42 @@ router.post('/signin', async function (req, res, next) {
 
     req.session.jwt = jwt
 
-    const state = cryptoProvider.base64Encode(
+    var state = cryptoProvider.base64Encode(
         JSON.stringify({
             csrfToken: req.session.csrfToken,
             redirectTo: '/dev-redirect'
         })
-    );
+    )
 
-    const authCodeUrlRequestParams = {
+    var authCodeUrlRequestParams = {
         state: state,
         scopes: ConfigLoader(["auth","scopes"]),
         prompt:"login"
     };
 
-    const authCodeRequestParams = {
+    var authCodeRequestParams = {
         scopes: ConfigLoader(["auth","scopes"]),
+        prompt:"login"
     };
+
+    if(req.body.connectedAccountId){
+
+        console.log("Account specified.")
+
+        var connectedAccount = await ConnectedAccount.findOne({id:req.body.connectedAccountId}).exec()
+
+        var login_hint = connectedAccount.microsoftLoginHint
+        console.log("login hint: " + login_hint)
+
+        authCodeUrlRequestParams["login_hint"] = login_hint
+
+        authCodeRequestParams["login_hint"] = login_hint
+
+        console.log(authCodeRequestParams)
+
+        console.log(authCodeUrlRequestParams)
+
+    }
 
     return redirectToAuthCodeUrl(req, res, next, authCodeUrlRequestParams, authCodeRequestParams)
 });
@@ -104,6 +117,9 @@ router.post('/redirect', bodyParser.urlencoded({extended: false}), async functio
             try {
                 const tokenResponse = await msalInstance.acquireTokenByCode(req.session.authCodeRequest);
 
+                // THIS BROKE THE APP SINCE IT CAUSED NODEMON TO RESTART!
+                // Switching to plain node during development.
+                // fs.writeFileSync('debug_tokenResponse.json',JSON.stringify(tokenResponse))
 
                 req.session.accessToken = tokenResponse.accessToken;
                 req.session.idToken = tokenResponse.idToken;
@@ -166,6 +182,10 @@ router.post('/redirect', bodyParser.urlencoded({extended: false}), async functio
                 tokenInfo["refreshToken"] = req.session.refreshToken
 
                 tokenInfo["organizationName"] = "not yet implemented"
+
+                tokenInfo["microsoftLoginHint"] = req.session.account.idTokenClaims.login_hint
+
+                console.log("Setting tokenInfo")
 
                 req.session["tokenInfo"] = tokenInfo
 
