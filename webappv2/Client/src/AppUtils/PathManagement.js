@@ -1,11 +1,11 @@
 function getPathComponents(path) {
 
-    path = path.replace(/\\/g,"/")
-    path = path.replace(/\/+/g,"/")
-    path = path.replace(/^\//g,"")
-    path = path.replace(/\/$/g,"")
+    path = path.replace(/\\/g, "/")
+    path = path.replace(/\/+/g, "/")
+    path = path.replace(/^\//g, "")
+    path = path.replace(/\/$/g, "")
 
-    if (path==""){
+    if (path === "") {
         return []
     }
 
@@ -13,4 +13,8 @@ function getPathComponents(path) {
 
 }
 
-export {getPathComponents}
+function fusePathComponents(components) {
+    return components.join("/")
+}
+
+export { getPathComponents, fusePathComponents }

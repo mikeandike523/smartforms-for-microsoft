@@ -13,16 +13,16 @@ import useModal from '../Templates/Modal.js'
 import axios from 'axios'
 import FilePicker from '../Templates/FilePicker.js'
 
-function Dashboard(){
+function Dashboard() {
 
-    var [modal_content,modalOpen,modalClose]=useModal()
+    var [modal_content, modalOpen, modalClose] = useModal()
 
     const handleDisconnectAccount = async (e) => {
 
         const connectionId = e.target.dataset.connectionid
 
         // @TODO: Is it safe to expose microsoft homeAccountId on the client/browser side?
-        const loginInfo = (await axios.post("http://localhost:8081/api/disconnect-account",{jwt:StateManager.query.exact(["jwt"]),connectionId:connectionId})).data
+        const loginInfo = (await axios.post("http://localhost:8081/api/disconnect-account", { jwt: StateManager.query.exact(["jwt"]), connectionId: connectionId })).data
 
         var helper = new MSALLogoutHelper(loginInfo)
         // helper.redirect() // @TODO: rename to popup()
@@ -36,32 +36,36 @@ function Dashboard(){
 
     }
 
-    const handleReconnectAccount = async(e) => {
+    const handleReconnectAccount = async (e) => {
 
         const connectionId = e.target.dataset.connectionid
-        console.log("connectionId: " + connectionId)
-        const login_url = (await axios.post('http://localhost:8081/auth0/signin',{jwt:StateManager.query.exact(["jwt"]),connectedAccountId:connectionId},{withCredentials:true})).data
-         window.location = login_url
+        const login_url = (await axios.post('http://localhost:8081/auth0/signin', { jwt: StateManager.query.exact(["jwt"]), connectedAccountId: connectionId }, { withCredentials: true })).data
+        window.location = login_url
 
     }
 
     const handleConnectAccount = async () => {
 
-        const login_url = (await axios.post('http://localhost:8081/auth0/signin',{jwt:StateManager.query.exact(["jwt"])},{withCredentials:true})).data
+        const login_url = (await axios.post('http://localhost:8081/auth0/signin', { jwt: StateManager.query.exact(["jwt"]) }, { withCredentials: true })).data
         window.location = login_url
-        
+
     }
 
     const handleConnectSpreadsheet = async (id) => {
-        modalOpen({title:'Connect Spreadsheet',body:(<FilePicker id={id} path="/"/>)})
+        modalOpen({ title: 'Connect Spreadsheet', body: (<FilePicker handlePickFile={handlePickFile} id={id} path="/" />) })
+    }
+
+    const handlePickFile = (filePath) => {
+        alert("You selected: https://graph.microsoft.com/v1.0/me/drive/root:/" + filePath)
+        modalClose()
     }
 
     const [connectedAccounts, setConnectedAccounts] = useState([])
 
-    const [spreadsheetLists,setSpreadsheetLists] = useState({})
+    const [spreadsheetLists, setSpreadsheetLists] = useState({})
 
 
-    useEffect(()=>{
+    useEffect(() => {
 
         (async () => {
 
@@ -70,107 +74,103 @@ function Dashboard(){
             // const helper = new MSALLogoutHelper({})
             // await helper.finalize()
 
-            const result = (await axios.post('http://localhost:8081/api/associate-latest-token',{jwt:StateManager.query.exact(["jwt"])},{withCredentials:true})).data // Idempotent operation
+            const result = (await axios.post('http://localhost:8081/api/associate-latest-token', { jwt: StateManager.query.exact(["jwt"]) }, { withCredentials: true })).data // Idempotent operation
 
-            var connectedAccountsResult = (await axios.post('http://localhost:8081/api/connected-accounts',{jwt:StateManager.query.exact(["jwt"])},{withCredentials:true})).data
+            var connectedAccountsResult = (await axios.post('http://localhost:8081/api/connected-accounts', { jwt: StateManager.query.exact(["jwt"]) }, { withCredentials: true })).data
 
-            console.log(connectedAccountsResult)
-
-            if(connectedAccountsResult.status==="success"){
+            if (connectedAccountsResult.status === "success") {
                 setConnectedAccounts(connectedAccountsResult.data)
-            }else{
+            } else {
                 setConnectedAccounts([])
             }
 
-            for(var i=0; i<connectedAccountsResult.data.length; i++){
+            for (var i = 0; i < connectedAccountsResult.data.length; i++) {
                 var spreadsheetListsObj = {}
-                Object.assign(spreadsheetListsObj,spreadsheetListsObj)
-                var spreadsheetList = await (axios.post('http://localhost:8081/api/list-spreadsheets',{jwt:StateManager.query.exact(["jwt"])})).data
+                Object.assign(spreadsheetListsObj, spreadsheetListsObj)
+                var spreadsheetList = await (axios.post('http://localhost:8081/api/list-spreadsheets', { jwt: StateManager.query.exact(["jwt"]) })).data
                 spreadsheetListsObj[connectedAccountsResult.data[i].id] = spreadsheetList
                 setSpreadsheetLists(spreadsheetListsObj)
             }
 
         })()
-        
-    },[])
+
+    }, [])
 
     return (
 
         <>
-        <CenteredContent isAuthenticated={true}>
+            <CenteredContent isAuthenticated={true}>
 
-            <h3>SmartSummaries Dashboard</h3>
+                <h3>SmartSummaries Dashboard</h3>
 
-            <h5>Connected Accounts</h5>
+                <h5>Connected Accounts</h5>
 
-            {
-                connectedAccounts.length == 0 ? 
-            (
+                {
+                    connectedAccounts.length == 0 ?
+                        (
 
-            <>
-                <table>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <span>No connected accounts.&nbsp;<span className="w3-btn" style={{textDecoration:"underline"}} onClick={handleConnectAccount}>Connect Account</span></span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-            </>
+                            <>
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <span>No connected accounts.&nbsp;<span className="w3-btn" style={{ textDecoration: "underline" }} onClick={handleConnectAccount}>Connect Account</span></span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
 
-            ) : (
-            
-            <>
-                <table className="w3-table w3-striped">
-                    <thead>
-                        <tr>
-                            <td>Name</td>
-                            <td>Email</td>
-                            <td>Organization Name</td>
-                            <td>Connection Health</td>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {
-                            (()=>{
-                                var entry_idx = -1
-                                function entry (userFullName,userMicrosoftEmail,tennantFullName,connectionHealth,id){
-                                    console.log("entry id:" + id)
-                                    entry_idx++
-                                    return (<><tr key={`account_${entry_idx}`}><td>{userFullName}</td><td>{userMicrosoftEmail}</td><td>{tennantFullName}</td><td>{(<span>{connectionHealth}&nbsp;<span onClick={handleDisconnectAccount} data-connectionid={id}  style={{textDecoration:"underline",cursor:"pointer",userSelect:"none"}} className="w3-text-red">(disconnect)</span>&nbsp;<span onClick={handleReconnectAccount} data-connectionid={id}  style={{textDecoration:"underline",cursor:"pointer",userSelect:"none"}} className="w3-text-blue">(reconnect)</span></span>)
-                                    }</td></tr>
-                                    
-                                    {(connectionHealth==="alive")&&(
-                                    <tr>
-                                        <td colSpan='4'>
-                                    <SpreadsheetList items={spreadsheetLists[id]??[]} handleConnectSpreadsheet={(e)=>handleConnectSpreadsheet(id)}/>
-                                        </td>
-                                    </tr>)}
-                                    
-                                    </>)
-                                }
-                                var entries = []
-                                for(var i=0; i<connectedAccounts.length; i++){
-                                    var account = connectedAccounts[i]
-                                    console.log(account)
-                                    entries.push(entry(account.userFullName,account.microsoftEmail,account.organizationName,account.health,account.id))
-                                }
-                                return entries
-                            })()
-                        }
-                    </tbody>
-                </table>
-                <div className='w3-text-center'>
-                    <span className="w3-btn" style={{textDecoration:"underline"}} onClick={handleConnectAccount}>Connect Another Account</span>
-                </div>
-            </>
-            
-            )}
+                            </>
 
-        </CenteredContent>
-        {modal_content}
+                        ) : (
+
+                            <>
+                                <table className="w3-table w3-striped">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                            <td>Email</td>
+                                            <td>Organization Name</td>
+                                            <td>Connection Health</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {
+                                            (() => {
+                                                var entry_idx = -1
+                                                function entry(userFullName, userMicrosoftEmail, tennantFullName, connectionHealth, id) {
+                                                    entry_idx++
+                                                    return (<><tr key={`account_${entry_idx}`}><td>{userFullName}</td><td>{userMicrosoftEmail}</td><td>{tennantFullName}</td><td>{(<span>{connectionHealth}&nbsp;<span onClick={handleDisconnectAccount} data-connectionid={id} style={{ textDecoration: "underline", cursor: "pointer", userSelect: "none" }} className="w3-text-red">(disconnect)</span>&nbsp;<span onClick={handleReconnectAccount} data-connectionid={id} style={{ textDecoration: "underline", cursor: "pointer", userSelect: "none" }} className="w3-text-blue">(reconnect)</span></span>)
+                                                    }</td></tr>
+
+                                                        {(connectionHealth === "alive") && (
+                                                            <tr>
+                                                                <td colSpan='4'>
+                                                                    <SpreadsheetList items={spreadsheetLists[id] ?? []} handleConnectSpreadsheet={(e) => handleConnectSpreadsheet(id)} />
+                                                                </td>
+                                                            </tr>)}
+
+                                                    </>)
+                                                }
+                                                var entries = []
+                                                for (var i = 0; i < connectedAccounts.length; i++) {
+                                                    var account = connectedAccounts[i]
+                                                    entries.push(entry(account.userFullName, account.microsoftEmail, account.organizationName, account.health, account.id))
+                                                }
+                                                return entries
+                                            })()
+                                        }
+                                    </tbody>
+                                </table>
+                                <div className='w3-text-center'>
+                                    <span className="w3-btn" style={{ textDecoration: "underline" }} onClick={handleConnectAccount}>Connect Another Account</span>
+                                </div>
+                            </>
+
+                        )}
+
+            </CenteredContent>
+            {modal_content}
         </>
     );
 

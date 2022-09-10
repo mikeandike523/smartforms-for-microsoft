@@ -46,7 +46,7 @@ async function redirectToAuthCodeUrl(req, res, next, authCodeUrlRequestParams, a
     try {
         var authCodeUrlResponse = await msalInstance.getAuthCodeUrl(req.session.authCodeUrlRequest);
 
-        if(authCodeUrlRequestParams.login_hint){
+        if (authCodeUrlRequestParams.login_hint) {
             authCodeUrlResponse += "&login_hint=" + encodeURIComponent(authCodeUrlRequestParams.login_hint)
         }
 
@@ -74,133 +74,100 @@ router.post('/signin', async function (req, res, next) {
 
     var authCodeUrlRequestParams = {
         state: state,
-        scopes: ConfigLoader(["auth","scopes"]),
-        prompt:"login"
+        scopes: ConfigLoader(["auth", "scopes"]),
+        prompt: "login"
     };
 
     var authCodeRequestParams = {
-        scopes: ConfigLoader(["auth","scopes"]),
-        prompt:"login"
+        scopes: ConfigLoader(["auth", "scopes"]),
+        prompt: "login"
     };
 
-    if(req.body.connectedAccountId){
+    if (req.body.connectedAccountId) {
 
-        console.log("Account specified.")
-
-        var connectedAccount = await ConnectedAccount.findOne({id:req.body.connectedAccountId}).exec()
+        var connectedAccount = await ConnectedAccount.findOne({ id: req.body.connectedAccountId }).exec()
 
         var login_hint = connectedAccount.microsoftLoginHint
-        console.log("login hint: " + login_hint)
 
         authCodeUrlRequestParams["login_hint"] = login_hint
 
         authCodeRequestParams["login_hint"] = login_hint
-
-        console.log(authCodeRequestParams)
-
-        console.log(authCodeUrlRequestParams)
 
     }
 
     return redirectToAuthCodeUrl(req, res, next, authCodeUrlRequestParams, authCodeRequestParams)
 });
 
-router.post('/redirect', bodyParser.urlencoded({extended: false}), async function (req, res, next) {
-    if(req.body)
-    if (req.body.state) {
-        const state = JSON.parse(cryptoProvider.base64Decode(req.body.state));
+router.post('/redirect', bodyParser.urlencoded({ extended: false }), async function (req, res, next) {
+    if (req.body)
+        if (req.body.state) {
+            const state = JSON.parse(cryptoProvider.base64Decode(req.body.state));
 
-        if (state.csrfToken === req.session.csrfToken) {
-            req.session.authCodeRequest.code = req.body.code;
-            req.session.authCodeRequest.codeVerifier = req.session.pkceCodes.verifier // PKCE Code Verifier
+            if (state.csrfToken === req.session.csrfToken) {
+                req.session.authCodeRequest.code = req.body.code;
+                req.session.authCodeRequest.codeVerifier = req.session.pkceCodes.verifier // PKCE Code Verifier
 
-            try {
-                const tokenResponse = await msalInstance.acquireTokenByCode(req.session.authCodeRequest);
+                try {
+                    const tokenResponse = await msalInstance.acquireTokenByCode(req.session.authCodeRequest);
 
-                // THIS BROKE THE APP SINCE IT CAUSED NODEMON TO RESTART!
-                // Switching to plain node during development.
-                // fs.writeFileSync('debug_tokenResponse.json',JSON.stringify(tokenResponse))
+                    // THIS BROKE THE APP SINCE IT CAUSED NODEMON TO RESTART!
+                    // Switching to plain node during development.
+                    // fs.writeFileSync('debug_tokenResponse.json',JSON.stringify(tokenResponse))
 
-                req.session.accessToken = tokenResponse.accessToken;
-                req.session.idToken = tokenResponse.idToken;
-                req.session.account = tokenResponse.account;
-                req.session.isAuthenticated = true;
+                    req.session.accessToken = tokenResponse.accessToken;
+                    req.session.idToken = tokenResponse.idToken;
+                    req.session.account = tokenResponse.account;
+                    req.session.isAuthenticated = true;
 
-                const extractRefreshToken = () => {
-                    const tokenCache = msalInstance.getTokenCache()
-                    // console.log(JSON.stringify(tokenCache.storage.cache,null,4))
+                    const extractRefreshToken = () => {
+                        const tokenCache = msalInstance.getTokenCache()
 
-                    var refreshToken = null;
-                    // for(const item in tokenCache.storage.cache){
-                    //     if (item.credentialType === 'RefreshToken'){
-                    //         refreshToken = item.secret
-                    //         break
-                    //     }
-                    // }
-                    // for (var i = 0; i < tokenCache.storage.cache.length; i++) {
-                    //     const item = tokenCache.storage.cache[i]
-                    //     console.log(item)
-                    //     if (item.credentialType === 'RefreshToken'){
-                    //         refreshToken = item.secret
-                    //         // break
-                    //     }
-                    // }
-                    for(const [key,value] of Object.entries(tokenCache.storage.cache)){
-                        const item = value
-                        if (item.credentialType === 'RefreshToken'){
-                            refreshToken = item.secret
-                            break
+                        var refreshToken = null;
+
+                        for (const [key, value] of Object.entries(tokenCache.storage.cache)) {
+                            const item = value
+                            if (item.credentialType === 'RefreshToken') {
+                                refreshToken = item.secret
+                                break
+                            }
                         }
+                        return refreshToken
                     }
-                    return refreshToken
+
+                    const tokenCache = msalInstance.getTokenCache()
+
+                    req.session.refreshToken = extractRefreshToken()
+
+                    tokenInfo = {}
+
+                    tokenInfo["microsoftId"] = req.session.account.homeAccountId
+
+                    tokenInfo["userFullName"] = req.session.account.name
+
+                    tokenInfo["microsoftEmail"] = req.session.account.username
+
+                    tokenInfo["accessToken"] = req.session.accessToken
+
+                    tokenInfo["refreshToken"] = req.session.refreshToken
+
+                    tokenInfo["organizationName"] = "not yet implemented"
+
+                    tokenInfo["microsoftLoginHint"] = req.session.account.idTokenClaims.login_hint
+
+                    req.session["tokenInfo"] = tokenInfo
+
+                    res.redirect("http://localhost:8081/dev-redirect")
+
+                } catch (error) {
+                    next(error);
                 }
-
-                const tokenCache = msalInstance.getTokenCache()
-
-                // console.log(tokenCache)
-
-                // console.log(tokenCache.storage)
-
-                // console.log(tokenCache.storage.cache)
-
-                req.session.refreshToken = extractRefreshToken()
-
-                console.log(`extractRefreshToken: ${extractRefreshToken()}`)
-
-                console.log(`req.session.refreshToken: ${req.session.refreshToken}`)
-
-                tokenInfo = {}
-
-                tokenInfo["microsoftId"] = req.session.account.homeAccountId
-
-                tokenInfo["userFullName"] = req.session.account.name
-
-                tokenInfo["microsoftEmail"] = req.session.account.username
-
-                tokenInfo["accessToken"] = req.session.accessToken
-
-                tokenInfo["refreshToken"] = req.session.refreshToken
-
-                tokenInfo["organizationName"] = "not yet implemented"
-
-                tokenInfo["microsoftLoginHint"] = req.session.account.idTokenClaims.login_hint
-
-                console.log("Setting tokenInfo")
-
-                req.session["tokenInfo"] = tokenInfo
-
-                res.redirect("http://localhost:8081/dev-redirect")
-
-            } catch (error) {
-                next(error);
+            } else {
+                next(new Error('csrf token does not match'));
             }
         } else {
-            next(new Error('csrf token does not match'));
+            next(new Error('state is missing'));
         }
-    } else {
-        next(new Error('state is missing'));
-    }
-    else{
+    else {
 
     }
 });

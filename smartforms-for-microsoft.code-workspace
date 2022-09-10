@@ -20,7 +20,8 @@
 			"**/package.json": true,
 			"**/package-lock.json": true
 		},
-		"powershell.cwd": "c:\\Projects\\smartforms-for-microsoft"
+		"powershell.cwd": "c:\\Projects\\smartforms-for-microsoft",
+		"editor.formatOnSave": true
 
 	}
 }
