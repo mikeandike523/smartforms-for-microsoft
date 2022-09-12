@@ -41,7 +41,7 @@ function FilePicker(props) {
         } else {
             components.push(name)
             var filePath = fusePathComponents(components)
-            props.handlePickFile(filePath)
+            props.handlePickFile(filePath, props.id)
         }
 
     }

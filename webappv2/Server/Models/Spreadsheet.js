@@ -1,19 +1,19 @@
 const mongoose = require('mongoose')
 
 const Spreadsheet = mongoose.Schema({
-    "user":{
+    "user": {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Users"
     },
-    "connectedAccount":{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"ConnectedAccounts"
+    "connectedAccount": {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ConnectedAccounts"
     },
-    "microsoftId":String,
-    "name" : String,
-    "parentDirectoryPath" : String,
-    "applicationURL": String, 
-    
+    "microsoftItemId": {
+        type: "String",
+        unique: true
+    },
+    "filePath": String
 })
 
-module.exports = mongoose.model('Spreadsheets',Spreadsheet)
+module.exports = mongoose.model('Spreadsheets', Spreadsheet)

@@ -1,12 +1,12 @@
 import StateManager from '../../AppUtils/StateManager.js'
 import CenteredContent from '../Templates/CenteredContent.js'
 import useModal from '../Templates/Modal'
-import {Link, useNavigate} from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
-import { useState} from 'react'
+import { useState } from 'react'
 import axios from 'axios'
 
-function Signup(){
+function Signup() {
 
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
@@ -16,72 +16,72 @@ function Signup(){
 
     const signup_submit = async () => {
 
-        if((!email??"".trim()) || (!password??"".trim()) || (!cpassword??"".trim())){
+        if ((!email ?? "".trim()) || (!password ?? "".trim()) || (!cpassword ?? "".trim())) {
             modalOpen({
-                title:"Invalid Signup",
-                body:"Email, password, or confirm-password is blank."
+                title: "Invalid Signup",
+                body: "Email, password, or confirm-password is blank."
             })
             return;
         }
 
-        if(password!=cpassword){
+        if (password != cpassword) {
             modalOpen({
-                title:"Invalid Signup",
-                body:"Password and confirm-password do not match."
+                title: "Invalid Signup",
+                body: "Password and confirm-password do not match."
             })
             return;
         }
 
-        const response = (await axios.post("/auth/signup",{
+        const response = (await axios.post("/auth/signup", {
 
             email: email,
             password: password,
             cpassword: cpassword
 
-        })).data// Assume server does not crash
+        })).data
 
-        if(response.status === "success"){
+        if (response.status === "success") {
             modalOpen({
-                title:"Success",
-                body:(
+                title: "Success",
+                body: (
 
-                    <h5>Signup successful.&nbsp;<Link to="/signin" style={{textDecoration:"underline",cursor:"pointer",userSelect:"none"}}>Sign In</Link></h5>
-                    
+                    <h5>Signup successful.&nbsp;<Link to="/signin" style={{ textDecoration: "underline", cursor: "pointer", userSelect: "none" }}>Sign In</Link></h5>
+
                 )
             })
-        }else{
+        } else {
             modalOpen({
-                title:"Error",
-                body:response.data
+                title: "Error",
+                body: response.data
             })
         }
     }
 
     return (
         <>
-        <CenteredContent isAuthenticated={false}>
-            <h1>SmartSummaries For Excel Online</h1>
-            <h3>Sign up for a new account.</h3>
-            <div>
-                <label>Email:<input type="text" className="w3-input" onChange={
-                    (event) => {
-                        setEmail(event.target.value)
-                    }
-                }/></label>
-                <label>Password:<input type="password" className="w3-input" onChange={
-                    (event) => {
-                        setPassword(event.target.value)
-                    }
-                }/></label>
-                <label>Confirm Password:<input type="password" className="w3-input" onChange={
-                    (event) => {
-                        setCPassword(event.target.value)
-                    }
-                }/></label>
-            </div>
-            <button type="button" className="w3-btn w3-green" onClick={signup_submit}>Sign Up</button>
-        </CenteredContent>
-        {modal_content}
+            <CenteredContent isAuthenticated={false}>
+                <h1>SmartSummaries For Excel Online</h1>
+                <h3>Sign up for a new account.</h3>
+                <div>
+                    <label>Email:<input type="text" className="w3-input" onChange={
+                        (event) => {
+                            setEmail(event.target.value)
+                        }
+                    } /></label>
+                    <label>Password:<input type="password" className="w3-input" onChange={
+                        (event) => {
+                            setPassword(event.target.value)
+                        }
+                    } /></label>
+                    <label>Confirm Password:<input type="password" className="w3-input" onChange={
+                        (event) => {
+                            setCPassword(event.target.value)
+                        }
+                    } /></label>
+                </div>
+                <button type="button" className="w3-btn w3-green" onClick={signup_submit}>Sign Up</button>
+            </CenteredContent>
+            {modal_content}
         </>
     );
 }

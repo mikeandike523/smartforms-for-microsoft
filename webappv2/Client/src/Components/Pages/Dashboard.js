@@ -4,14 +4,18 @@ import CenteredContent from '../Templates/CenteredContent.js'
 
 import MSALLogoutHelper from '../../AppUtils/MSALLogoutHelper.js'
 
-import SpreadsheetList from '../Templates/SpreadsheetList.js'
+import SpreadsheetList from '../Templates/SpreadsheetList.jsx'
 
 import { useEffect, useState } from 'react'
+
+import { useNavigate } from 'react-router-dom'
 
 import useModal from '../Templates/Modal.js'
 
 import axios from 'axios'
 import FilePicker from '../Templates/FilePicker.js'
+
+import '../Styling/spinner.css'
 
 function Dashboard() {
 
@@ -21,13 +25,9 @@ function Dashboard() {
 
         const connectionId = e.target.dataset.connectionid
 
-        // @TODO: Is it safe to expose microsoft homeAccountId on the client/browser side?
         const loginInfo = (await axios.post("http://localhost:8081/api/disconnect-account", { jwt: StateManager.query.exact(["jwt"]), connectionId: connectionId })).data
 
         var helper = new MSALLogoutHelper(loginInfo)
-        // helper.redirect() // @TODO: rename to popup()
-
-        // @TODO: When deploy to https:// website, can work with postlogoutRedirectUrl to provide a smooth user experience that will refresh page/connected accounts list after microsoft signout completed. For now, simply delete access/refresh token from mongodb database. The express-session session should have already been destroyed on sign-in (i.e., /api/associateLatestToken)
 
         await helper.prepare()
         await helper.finalize()
@@ -55,9 +55,56 @@ function Dashboard() {
         modalOpen({ title: 'Connect Spreadsheet', body: (<FilePicker handlePickFile={handlePickFile} id={id} path="/" />) })
     }
 
-    const handlePickFile = (filePath) => {
-        alert("You selected: https://graph.microsoft.com/v1.0/me/drive/root:/" + filePath)
+    const handlePickFile = async (filePath, id) => {
+
         modalClose()
+
+        modalOpen({
+            "title": "Action in progress...", "body": (
+                <div>
+                    Connecting spreadsheet <i>{filePath}</i>...
+                    <div className="loader"></div>
+                </div>
+            )
+        })
+
+        const response = (await axios.post("http://localhost:8081/api/connect-spreadsheet", { jwt: StateManager.query.exact(['jwt']), path: filePath, connectedAccountId: id })).data
+
+        if (response.status === "success") {
+            modalClose()
+            console.log("Spreadsheet successfully connected.")
+            window.location.refresh()
+        }
+
+        else {
+
+            console.log(response.data)
+
+            modalClose()
+
+            if (response.code === "spreadsheet_already_connected") {
+                modalOpen({
+                    "title": "Spreadsheet Already Connected", "body": (
+                        <div>
+                            {response.data}
+                        </div>
+                    )
+                })
+            }
+            else {
+                modalOpen({
+                    "title": "Error Connecting Spreadsheet", "body": (
+                        <div>
+                            Error connecting spreadsheet <i>{filePath}</i>.<br />Please try again later or contact the support team.
+                        </div>
+                    )
+                })
+            }
+
+        }
+
+
+
     }
 
     const [connectedAccounts, setConnectedAccounts] = useState([])
@@ -71,10 +118,7 @@ function Dashboard() {
 
             window.axios = axios
 
-            // const helper = new MSALLogoutHelper({})
-            // await helper.finalize()
-
-            const result = (await axios.post('http://localhost:8081/api/associate-latest-token', { jwt: StateManager.query.exact(["jwt"]) }, { withCredentials: true })).data // Idempotent operation
+            const result = (await axios.post('http://localhost:8081/api/associate-latest-token', { jwt: StateManager.query.exact(["jwt"]) }, { withCredentials: true })).data
 
             var connectedAccountsResult = (await axios.post('http://localhost:8081/api/connected-accounts', { jwt: StateManager.query.exact(["jwt"]) }, { withCredentials: true })).data
 

@@ -110,10 +110,6 @@ router.post('/redirect', bodyParser.urlencoded({ extended: false }), async funct
                 try {
                     const tokenResponse = await msalInstance.acquireTokenByCode(req.session.authCodeRequest);
 
-                    // THIS BROKE THE APP SINCE IT CAUSED NODEMON TO RESTART!
-                    // Switching to plain node during development.
-                    // fs.writeFileSync('debug_tokenResponse.json',JSON.stringify(tokenResponse))
-
                     req.session.accessToken = tokenResponse.accessToken;
                     req.session.idToken = tokenResponse.idToken;
                     req.session.account = tokenResponse.account;

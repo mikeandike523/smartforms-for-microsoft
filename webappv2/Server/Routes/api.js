@@ -14,7 +14,8 @@ const JSONDB = require('../Utils/JSONDB.js');
 const msalConfig = require('../MicrosoftGraph/authConfig.js').msalConfig
 const axios = require('axios')
 const qs = require('querystring')
-const { getPathComponents } = require('../Utils/PathManagement.js')
+const { getPathComponents } = require('../Utils/PathManagement.js');
+const { request } = require('http');
 
 const msalInstance = new msal.ConfidentialClientApplication(msalConfig)
 const router = express.Router();
@@ -65,8 +66,6 @@ async function updateDatabaseWithTokens(microsoftId, accessToken, refreshToken) 
 }
 
 async function checkConnectionHealth(microsoftId, accessToken, refreshToken) {
-    // //for debug only
-    // const tokenInfo = await aquireNewTokens(microsoftId,accessToken,refreshToken)
 
     if (!refreshToken || !accessToken) {
         return "dead"
@@ -85,13 +84,10 @@ async function checkConnectionHealth(microsoftId, accessToken, refreshToken) {
         return "alive"
     } catch (e) {
 
-        return "dead" // In the future need to handle errors instead of assume dead
-
-        // throw e // Throwing the error broke the route
+        return "dead"
 
     }
 }
-
 
 async function graphGetWithHealthCheck(connectedAccountId, endpoint, urlparams) {
     var url_params_string = qs.stringify(urlparams)
@@ -131,14 +127,6 @@ async function graphPostWithHealthCheck(connectedAccountId, endpoint, urlparams,
 
 
 router.post('/associate-latest-token', async (req, res) => {
-
-
-    // RACE CONDITION DETECTED
-
-    // Whether the useffect hook causes several rapid calls to this api route, or the page is simply refreshed, there is a race condition and the check for an existing account with the corresponding microsoftId may fail as the document is created in ConnectedAccounts but its id may not yet be inserted into the connectedAccounts array in the corresponding UserData document
-
-    // @TODO: Switch to findOneAndUpdate instead of save where needed
-
 
     if ((!req.session) || (!req.session.tokenInfo)) {
         res.status(200).json(Result.success("No pending tokens to associate."))
@@ -181,33 +169,6 @@ router.post('/associate-latest-token', async (req, res) => {
 
 router.post('/connected-accounts', async (req, res) => {
 
-    // try{
-    //     const userData = await UserData.findOne({"user":req.userId}).populate("connectedAccounts").exec()
-    //     var connectedAccounts = JSON.parse(JSON.stringify(userData.connectedAccounts));
-    //     for(var i = 0; i < connectedAccounts.length; i++){
-    //         const connectedAccount = connectedAccounts[i]
-    //         connectedAccounts[i]["health"] = await checkConnectionHealth(connectedAccount.microsoftId, connectedAccount.accessToken, connectedAccount.refreshToken)
-    //     }
-    //     var connectedAccountResults = []
-    //     for(var i =0; i<connectedAccounts.length;i++){
-    //         const connectedAccount = connectedAccounts[i]
-    //         const resultObject = {}
-
-    //         //Respond only with necessary fields for the ui
-    //         resultObject["userFullName"] = connectedAccount.userFullName
-    //         resultObject["microsoftEmail"] = connectedAccount.microsoftEmail
-    //         resultObject["organizationName"] = connectedAccount.organizationName
-    //         resultObject["health"] = connectedAccount.health
-    //         resultObject["id"] = connectedAccount.id //mongodb document id 
-
-    //         connectedAccountResults.push(resultObject)
-    //     }
-    //     res.json(Result.success(connectedAccountResults))
-    // }
-    // catch(e){
-    //     res.json(Result.error("generic_error","Error getting connected accounts: "+e.message))
-    // }
-
     try {
         const userId = req.userId
 
@@ -219,13 +180,11 @@ router.post('/connected-accounts', async (req, res) => {
 
             const connectedAccount = connectedAccounts[i]
             const resultObject = {}
-
-            //Respond only with necessary fields for the ui
             resultObject["userFullName"] = connectedAccount.userFullName
             resultObject["microsoftEmail"] = connectedAccount.microsoftEmail
             resultObject["organizationName"] = connectedAccount.organizationName
             resultObject["health"] = await checkConnectionHealth(connectedAccount.microsoftId, connectedAccount.accessToken, connectedAccount.refreshToken)
-            resultObject["id"] = connectedAccount.id //mongodb document id 
+            resultObject["id"] = connectedAccount.id
 
             results.push(resultObject)
 
@@ -240,13 +199,11 @@ router.post('/connected-accounts', async (req, res) => {
 
 })
 
-
-// Returns microsoft Id so user can logout on the frontend
 router.post('/disconnect-account', async function (req, res) {
 
     try {
 
-        var accountId = req.body.connectionId; //mongodb _id
+        var accountId = req.body.connectionId;
 
         const accountObj = await ConnectedAccount.findOne({ id: accountId }).exec()
 
@@ -284,9 +241,7 @@ router.post('/list-spreadsheets', async function (req, res) {
         for (var i = 0; i < spreadsheets.length; i++) {
             var responseObject = {}
             responseObject.id = spreadsheets[i].id
-            responseObject.name = spreadsheets[i].name
-            responseObject.parentDirectoryPath = spreadsheets[i].parentDirectoryPath
-            responseObject.applicationURL = spreadsheets[i].applicationURL
+            responseObject.filePath = spreadsheets[i].filePath
             responseObjects.push(responseObject)
         }
         res.json(Result.success(responseObjects))
@@ -347,7 +302,34 @@ router.post('/file-picker/list', async function (req, res) {
     })
 })
 
+router.post("/connect-spreadsheet", async (req, res) => {
+    RunAsyncRouteWithErrorHandling(req, res, async (req, res) => {
 
-// Notify mongodb database that connection was removed
+        const root = req.body.path
+        var components = getPathComponents(root)
+        const userId = req.userId
+        const connectedAccountId = req.body.connectedAccountId
+        var id_response = (await graphGetWithHealthCheck(connectedAccountId, `/me/drive/root:/${components.join("/")}`)).data
+        var microsoftItemId = id_response.id
+        var existingRecord = await Spreadsheet.findOne({ microsoftItemId: microsoftItemId })
+        if (!existingRecord) {
+
+            await Spreadsheet.findOneAndUpdate({ microsoftItemId: microsoftItemId }, {
+                user: req.userId,
+                connectedAccount: connectedAccountId,
+                microsoftItemId: microsoftItemId,
+                filePath: components.join("/"),
+
+            }, { upsert: true }).exec()
+
+            var spreadsheet = await Spreadsheet.findOne({ microsoftItemId: microsoftItemId }).exec()
+
+            res.json(Result.success(spreadsheet.id))
+
+        } else {
+            res.json(Result.error("spreadsheet_already_connected", "The selected spreadsheet is already connected, edit the current connection or disconnect it."))
+        }
+    })
+})
 
 module.exports = router
