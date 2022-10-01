@@ -1,4 +1,6 @@
 import axios from 'axios'
+import StateManager from './StateManager';
+import { useNavigate } from 'react-router-dom'
 
 class DBManager {
     constructor() {
@@ -9,6 +11,10 @@ class DBManager {
     }
     async query(route) {
         console.log((await axios.post("/db/" + route, { "db_admin_password": this.password })).data)
+        if (route == "clear-all-users") {
+            StateManager.upsert.exact(["jwt"], null)
+            window.location = "http://localhost:3000/"
+        }
     }
     help() {
         const possible_commands = [

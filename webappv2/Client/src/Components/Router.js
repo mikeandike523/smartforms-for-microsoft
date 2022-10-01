@@ -6,23 +6,24 @@ import Signup from './Pages/Signup.js'
 import DBManager from '../AppUtils/DBManager.js'
 import StateManager from '../AppUtils/StateManager.js'
 
-import {BrowserRouter, Routes, Route} from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { useEffect } from 'react'
 import axios from 'axios'
+import EndUserFacing from './Pages/EndUserFacing.js'
 
-function Router(){
+function Router() {
 
-    useEffect(()=>{
+    useEffect(() => {
 
-        if(window.db === undefined){
+        if (window.db === undefined) {
             window.db = new DBManager();
         }
 
-        if(window.axpost === undefined){
-            window.axpost = async function(route,data){
-                data=data??{}
+        if (window.axpost === undefined) {
+            window.axpost = async function (route, data) {
+                data = data ?? {}
                 data.jwt = StateManager.query.exact(["jwt"])
-                console.log((await axios.post(route,data)).data)
+                console.log((await axios.post(route, data)).data)
             }
         }
 
@@ -31,11 +32,12 @@ function Router(){
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<Default />}/>
-                <Route path="/default" element={<Default />}/>
+                <Route path="/" element={<Default />} />
+                <Route path="/default" element={<Default />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/signin" element={<Signin />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/end-user-facing/:spreadsheetid" element={<EndUserFacing />} />
             </Routes>
         </BrowserRouter>
     );

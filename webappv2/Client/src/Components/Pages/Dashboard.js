@@ -73,7 +73,7 @@ function Dashboard() {
         if (response.status === "success") {
             modalClose()
             console.log("Spreadsheet successfully connected.")
-            window.location.refresh()
+            window.location.reload()
         }
 
         else {
@@ -131,9 +131,13 @@ function Dashboard() {
             for (var i = 0; i < connectedAccountsResult.data.length; i++) {
                 var spreadsheetListsObj = {}
                 Object.assign(spreadsheetListsObj, spreadsheetListsObj)
-                var spreadsheetList = await (axios.post('http://localhost:8081/api/list-spreadsheets', { jwt: StateManager.query.exact(["jwt"]) })).data
-                spreadsheetListsObj[connectedAccountsResult.data[i].id] = spreadsheetList
-                setSpreadsheetLists(spreadsheetListsObj)
+                var spreadsheetList = (await axios.post('http://localhost:8081/api/list-spreadsheets', { jwt: StateManager.query.exact(["jwt"]), connectedAccount: connectedAccountsResult.data[i].id })).data
+                if (spreadsheetList.status === "success") {
+                    spreadsheetList = spreadsheetList.data
+                    console.log(spreadsheetList)
+                    spreadsheetListsObj[connectedAccountsResult.data[i].id] = spreadsheetList
+                    setSpreadsheetLists(spreadsheetListsObj)
+                }
             }
 
         })()
@@ -184,11 +188,15 @@ function Dashboard() {
                                                 var entry_idx = -1
                                                 function entry(userFullName, userMicrosoftEmail, tennantFullName, connectionHealth, id) {
                                                     entry_idx++
-                                                    return (<><tr key={`account_${entry_idx}`}><td>{userFullName}</td><td>{userMicrosoftEmail}</td><td>{tennantFullName}</td><td>{(<span>{connectionHealth}&nbsp;<span onClick={handleDisconnectAccount} data-connectionid={id} style={{ textDecoration: "underline", cursor: "pointer", userSelect: "none" }} className="w3-text-red">(disconnect)</span>&nbsp;<span onClick={handleReconnectAccount} data-connectionid={id} style={{ textDecoration: "underline", cursor: "pointer", userSelect: "none" }} className="w3-text-blue">(reconnect)</span></span>)
+                                                    return (<><tr key={`account_${entry_idx}`} className={
+                                                        entry_idx % 2 == 0 ? 'w3-sand' : 'w3-aqua'
+                                                    }><td>{userFullName}</td><td>{userMicrosoftEmail}</td><td>{tennantFullName}</td><td>{(<span>{connectionHealth}&nbsp;<span onClick={handleDisconnectAccount} data-connectionid={id} style={{ textDecoration: "underline", cursor: "pointer", userSelect: "none" }} className="w3-text-red">(disconnect)</span>&nbsp;<span onClick={handleReconnectAccount} data-connectionid={id} style={{ textDecoration: "underline", cursor: "pointer", userSelect: "none" }} className="w3-text-blue">(reconnect)</span></span>)
                                                     }</td></tr>
 
                                                         {(connectionHealth === "alive") && (
-                                                            <tr>
+                                                            <tr className={
+                                                                entry_idx % 2 == 0 ? 'w3-sand' : 'w3-aqua'
+                                                            }>
                                                                 <td colSpan='4'>
                                                                     <SpreadsheetList items={spreadsheetLists[id] ?? []} handleConnectSpreadsheet={(e) => handleConnectSpreadsheet(id)} />
                                                                 </td>

@@ -1,3 +1,6 @@
+
+
+
 var express = require('express')
 var session = require('express-session')
 var cors = require('cors')
@@ -38,6 +41,9 @@ app.use('/api', api_router)
 const db_router = require('./Routes/dbmgmt.js')
 app.use('/db', db_router)
 
+const enduserfacing_router = require('./Routes/enduserfacing.js')
+app.use('/enduserfacing-api', enduserfacing_router)
+
 app.get('/dev-redirect', (req, res) => {
     res.redirect('http://localhost:3000')
 })
@@ -50,6 +56,7 @@ async function connect() {
 connect().then(() => {
 
     var server = app.listen(8081, () => {
+        console.log(process.cwd())
         console.log('Server running at http://localhost:8081.')
     })
 

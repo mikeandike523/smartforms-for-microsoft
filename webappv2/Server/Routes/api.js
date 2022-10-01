@@ -7,7 +7,7 @@ const User = require('../Models/User.js')
 const UserData = require('../Models/UserData.js')
 const ConnectedAccount = require('../Models/ConnectedAccount.js')
 const Spreadsheet = require('../Models/Spreadsheet.js')
-const { graph_get, graph_post } = require('../MicrosoftGraph/fetch.js');
+const { graph_get, graph_post, graphGetWithHealthCheck, checkConnectionHealth } = require('../MicrosoftGraph/fetch.js');
 const RunAsyncRouteWithErrorHandling = require('../Utils/RunAsyncRouteWithErrorHandling.js');
 const { error } = require('../Utils/Result.js');
 const JSONDB = require('../Utils/JSONDB.js');
@@ -20,110 +20,12 @@ const { request } = require('http');
 const msalInstance = new msal.ConfidentialClientApplication(msalConfig)
 const router = express.Router();
 
-const MW_verifyToken = (req, res, next) => {
-
-    const token = req.body.jwt;
-    const secret = ConfigLoader(["jwt", "secret_key"])
-
-    if (!token) {
-        res.status(403).json(Result.error("jwt_missing", "No jwt token was included with this request."))
-        return
-    }
-
-    jwt.verify(token, secret, (err, decoded) => {
-
-        if (err) {
-            res.status(401).json(Result.error("jwt_invalid", "Invalid jwt token. Please sign-out and sign-in again."))
-        } else {
-            req.userId = decoded.id
-            next()
-        }
-
-    })
-}
+const MW_verifyToken = require('../Utils/MW_verifyToken.js')
 
 router.use(MW_verifyToken)
 
-async function aquireNewTokens(microsoftId, accessToken, refreshToken) {
-    const endpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
-    const client_id = msalConfig.auth.clientId
-    const scopes = ConfigLoader(["auth", "scopes"])
-    const grant_type = "refresh_token"
-    const client_secret = process.env.CLIENT_SECRET
-    const content_type = "application/x-ww-form-urlencoded"
-    const response = await axios.post(endpoint, qs.stringify({
-        "client_id": client_id,
-        "scope": scopes,
-        "client_secret": client_secret,
-        "grant_type": grant_type,
-        "refresh_token": refreshToken
-    }), { headers: { 'content-type': 'application/x-www-form-urlencoded' } })
-    return [microsoftId, response.data.access_token, response.data.refresh_token]
-}
 
-async function updateDatabaseWithTokens(microsoftId, accessToken, refreshToken) {
-    await ConnectedAccount.findOneAndUpdate({ "microsoftId": microsoftId }, { accessToken: accessToken, refreshToken: refreshToken }).exec()
-}
 
-async function checkConnectionHealth(microsoftId, accessToken, refreshToken) {
-
-    if (!refreshToken || !accessToken) {
-        return "dead"
-    }
-    if (!((microsoftId ?? "").trim())) {
-        throw "Microsoft ID is missing or null."
-    }
-    try {
-        const http_response = await graph_get("/me", accessToken)
-        if (http_response.status != 200) {
-            var [microsoftId, accessToken, refreshToken] = await aquireNewTokens(microsoftId, accessToken, refreshToken)
-            await updateDatabaseWithTokens(microsoftId, accessToken, refreshToken)
-            const http_response = await graph_get("/me", accessToken)
-            return (http_response == 200) ? "alive" : "dead"
-        }
-        return "alive"
-    } catch (e) {
-
-        return "dead"
-
-    }
-}
-
-async function graphGetWithHealthCheck(connectedAccountId, endpoint, urlparams) {
-    var url_params_string = qs.stringify(urlparams)
-    var uri = endpoint + (url_params_string && "?") + (url_params_string ?? "");
-
-    var connectedAccount = await ConnectedAccount.findOne({ id: connectedAccountId }).exec()
-    if (!connectedAccount) {
-        throw "No connected account matching the given mongodb id."
-    }
-    var microsoftId = connectedAccount.microsoftId
-    var accessToken = connectedAccount.accessToken
-    var refreshToken = connectedAccount.refreshToken
-    var health = await checkConnectionHealth(microsoftId, accessToken, refreshToken)
-    if (health === "dead") {
-        throw "The specified Microsoft account connection is dead."
-    }
-    return graph_get(uri, accessToken)
-}
-
-async function graphPostWithHealthCheck(connectedAccountId, endpoint, urlparams, data) {
-
-    var url_params_string = qs.stringify(urlparams)
-    var uri = endpoint + (url_params_string && "?") + (url_params_string ?? "");
-    var connectedAccount = await ConnectedAccount.findOne({ id: connectedAccountId }).exec()
-    if (!connectedAccount) {
-        throw "No connected account matching the given mongodb id."
-    }
-    var microsoftId = connectedAccount.microsoftId
-    var accessToken = connectedAccount.accessToken
-    var refreshToken = connectedAccount.refreshToken
-    var health = await checkConnectionHealth(microsoftId, accessToken, refreshToken)
-    if (health === "dead") {
-        throw "The specified Microsoft account connection is dead."
-    }
-    return graph_post(uri, accessToken, data)
-}
 
 
 router.post('/associate-latest-token', async (req, res) => {
@@ -237,6 +139,10 @@ router.post('/finalize-logout', async function (req, res) {
 router.post('/list-spreadsheets', async function (req, res) {
     RunAsyncRouteWithErrorHandling(req, res, async function (req, res) {
         var spreadsheets = await Spreadsheet.find({ user: req.userId, connectedAccount: req.body.connectedAccount }).exec()
+        console.log(req.userId)
+        console.log(spreadsheets)
+        console.log(req.body.connectedAccount)
+        console.log(JSON.stringify(req.body))
         var responseObjects = []
         for (var i = 0; i < spreadsheets.length; i++) {
             var responseObject = {}
